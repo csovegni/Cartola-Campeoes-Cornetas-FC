@@ -86,17 +86,29 @@
     .cards-row::-webkit-scrollbar { height: 8px; }
     .cards-row::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
 
+    /* Estrutura Rígida e Padronizada do Card */
     .champion-card {
       background: linear-gradient(145deg, #1c2128, #161b22);
       border: 1px solid var(--border-color);
       border-radius: 12px;
-      padding: 20px;
+      padding: 18px 15px;
       min-width: 250px;
       max-width: 250px;
       text-align: center;
-      position: relative;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .badge-container {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      width: 100%;
     }
 
     .competition-badge {
@@ -104,30 +116,61 @@
       background-color: var(--accent-gold);
       color: #000;
       font-weight: 700;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       padding: 5px 12px;
       border-radius: 20px;
-      margin-bottom: 15px;
       letter-spacing: 0.5px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      max-width: 100%;
+    }
+
+    .logo-container {
+      width: 90px;
+      height: 90px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
     }
 
     .team-logo {
-      width: 85px;
-      height: 85px;
+      max-width: 85px;
+      max-height: 85px;
       object-fit: contain;
-      margin: 0 auto 15px;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
     }
 
-    .champion-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-    .team-name { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; }
+    .champion-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+
+    .team-name {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .points-container {
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: auto;
+    }
 
     .points-tag {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       background-color: rgba(255, 215, 0, 0.1);
       color: var(--accent-gold);
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 8px;
       border: 1px solid rgba(255, 215, 0, 0.2);
     }
@@ -156,7 +199,6 @@
   <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTcXk8W9C9dh0DW_a-Cqxr--9D2RlsglbiYKqlMobr2zoZAmZ_4CXSeqFcMTjvsWwf7cSNh-e5oamMP/pub?gid=0&single=true&output=csv';
 
-    // Ordem de importância pedida
     function getWeight(competicao) {
       const comp = competicao.toLowerCase().trim();
       if (comp.includes('campeonato')) return 1;
@@ -164,10 +206,9 @@
       if (comp.includes('1') || comp.includes('primeiro')) return 3;
       if (comp.includes('2') || comp.includes('segundo')) return 4;
       if (comp.includes('super')) return 5;
-      return 99; // Se for outra competição, fica no final
+      return 99;
     }
 
-    // Função para extrair dados da linha independente do nome da coluna
     function getFieldValue(item, candidates) {
       const keys = Object.keys(item);
       for (let candidate of candidates) {
@@ -191,7 +232,6 @@
         const logo = getFieldValue(item, ['Logo_URL', 'Logo', 'Escudo', 'Foto', 'URL_Logo']) || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
         const participantes = getFieldValue(item, ['Participantes', 'Qtd Times', 'Times', 'Participantes_Qtd']);
 
-        // Descarta se não houver ano ou cartoleiro preenchido (ex: anos futuros vazios)
         if (!ano || !cartoleiro) return;
 
         if (!groupedData[ano]) {
@@ -214,7 +254,6 @@
         });
       });
 
-      // Ordena anos do maior (2025) para o menor (2015)
       const sortedYears = Object.values(groupedData).sort((a, b) => parseInt(b.ano) - parseInt(a.ano));
 
       renderizarGaleria(sortedYears);
@@ -230,7 +269,6 @@
       }
 
       anosData.forEach(anoGroup => {
-        // Ordena os cartões da esquerda para a direita pela regra de importância
         anoGroup.campeoes.sort((a, b) => a.sortWeight - b.sortWeight);
 
         const section = document.createElement('div');
@@ -242,11 +280,17 @@
         anoGroup.campeoes.forEach(camp => {
           cardsHtml += `
             <div class="champion-card">
-              <div class="competition-badge">${camp.competicao}</div>
-              <img src="${camp.logo}" alt="Escudo" class="team-logo" onerror="this.src='https://via.placeholder.com/100/ffd700/000000?text=ESCUDO'">
+              <div class="badge-container">
+                <span class="competition-badge">${camp.competicao}</span>
+              </div>
+              <div class="logo-container">
+                <img src="${camp.logo}" alt="Escudo" class="team-logo" onerror="this.src='https://via.placeholder.com/100/ffd700/000000?text=ESCUDO'">
+              </div>
               <div class="champion-name">${camp.cartoleiro}</div>
               <div class="team-name">${camp.time}</div>
-              ${camp.pontos ? `<div class="points-tag">${camp.pontos}</div>` : ''}
+              <div class="points-container">
+                ${camp.pontos ? `<span class="points-tag">${camp.pontos}</span>` : ''}
+              </div>
             </div>
           `;
         });
