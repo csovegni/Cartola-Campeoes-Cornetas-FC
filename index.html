@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Galeria de Campeões - Cartola FC</title>
+  <!-- PapaParse para ler a planilha em CSV -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg-color: #0d1117;
+      --card-bg: #161b22;
+      --accent-gold: #ffd700;
+      --text-main: #f0f6fc;
+      --text-muted: #8b949e;
+      --border-color: #30363d;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 15px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 25px;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .trophy-icon { font-size: 3.2rem; margin-bottom: 5px; }
+
+    h1 {
+      font-size: 1.8rem;
+      color: var(--accent-gold);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .search-container {
+      width: 100%;
+      max-width: 500px;
+      margin-bottom: 25px;
+    }
+
+    .search-container input {
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 25px;
+      border: 1px solid var(--border-color);
+      background-color: var(--card-bg);
+      color: var(--text-main);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .search-container input:focus {
+      border-color: var(--accent-gold);
+    }
+
+    .gallery-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .champion-card {
+      background: linear-gradient(145deg, #1c2128, #161b22);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 20px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .champion-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 25px rgba(255, 215, 0, 0.15);
+      border-color: rgba(255, 215, 0, 0.4);
+    }
+
+    .year-badge {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background-color: var(--accent-gold);
+      color: #000;
+      font-weight: bold;
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .team-logo {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      margin: 15px auto;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+    }
+
+    .champion-name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .team-name {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .points-tag {
+      display: inline-block;
+      font-size: 0.85rem;
+      background-color: rgba(255, 215, 0, 0.1);
+      color: var(--accent-gold);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .loading, .error-msg {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-top: 40px;
+      grid-column: 1 / -1;
+    }
+
+    footer {
+      margin-top: 40px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="trophy-icon">🏆</div>
+    <h1>Galeria de Campeões</h1>
+    <p class="subtitle">Histórico de Campeões do Cartola FC desde 2015</p>
+  </header>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Buscar por ano, cartoleiro ou time..." onkeyup="filterCards()">
+  </div>
+
+  <main class="gallery-container" id="galleryContainer">
+    <div class="loading">Carregando galeria...</div>
+  </main>
+
+  <footer>
+    <p>Liga Cartola FC • Desde 2015</p>
+  </footer>
+
+  <script>
+    // URL CSV derivada do seu link de publicação na web do Google Sheets
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTcXk8W9C9dh0DW_a-Cqxr--9D2RlsglbiYKqlMobr2zoZAmZ_4CXSeqFcMTjvsWwf7cSNh-e5oamMP/pub?gid=0&single=true&output=csv';
+
+    let allChampionsData = [];
+
+    function renderCards(data) {
+      const container = document.getElementById('galleryContainer');
+      container.innerHTML = '';
+
+      if (data.length === 0) {
+        container.innerHTML = '<div class="error-msg">Nenhum campeão encontrado.</div>';
+        return;
+      }
+
+      data.forEach(item => {
+        // Mapeamento dinâmico baseado no cabeçalho da planilha
+        const ano = item.Ano || item.ano || item[Object.keys(item)[0]] || '';
+        const cartoleiro = item.Cartoleiro || item.cartoleiro || item.Nome || item[Object.keys(item)[1]] || '';
+        const time = item.Time || item.time || item['Nome do Time'] || item[Object.keys(item)[2]] || '';
+        const pontos = item.Pontos || item.pontos || item.Pontuação || item[Object.keys(item)[3]] || '';
+        const logo = item.Logo_URL || item.logo || item.Logo || item.Escudo || item[Object.keys(item)[4]] || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
+
+        if (!ano && !cartoleiro) return;
+
+        const card = document.createElement('div');
+        card.className = 'champion-card';
+        card.innerHTML = `
+          <span class="year-badge">${ano}</span>
+          <img src="${logo}" alt="Escudo de ${time}" class="team-logo" onerror="this.src='https://via.placeholder.com/100/ffd700/000000?text=ESCUDO'">
+          <div class="champion-name">${cartoleiro}</div>
+          <div class="team-name">${time}</div>
+          ${pontos ? `<div class="points-tag">${pontos} pts</div>` : ''}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function filterCards() {
+      const term = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allChampionsData.filter(item => {
+        const str = Object.values(item).join(' ').toLowerCase();
+        return str.includes(term);
+      });
+      renderCards(filtered);
+    }
+
+    // Busca e converte o CSV da Planilha do Google
+    Papa.parse(csvUrl, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        allChampionsData = results.data;
+        renderCards(allChampionsData);
+      },
+      error: function(err) {
+        document.getElementById('galleryContainer').innerHTML = 
+          '<div class="error-msg">Erro ao carregar dados da planilha. Verifique o link público.</div>';
+      }
+    });
+  </script>
+</body>
+</html>
