@@ -13,7 +13,6 @@
       --text-main: #f0f6fc;
       --text-muted: #8b949e;
       --border-color: #30363d;
-      --competition-tag: #238636;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -44,12 +43,11 @@
       max-width: 1200px;
       display: flex;
       flex-direction: column;
-      gap: 40px;
+      gap: 35px;
     }
 
-    /* Seção de cada Ano */
     .year-section {
-      background: rgba(22, 27, 34, 0.4);
+      background: rgba(22, 27, 34, 0.5);
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 20px;
@@ -58,9 +56,9 @@
     .year-header {
       display: flex;
       align-items: baseline;
-      gap: 15px;
+      gap: 12px;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 15px;
+      padding-bottom: 12px;
       margin-bottom: 20px;
     }
 
@@ -72,23 +70,20 @@
 
     .year-participants {
       color: var(--text-muted);
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-style: italic;
     }
 
-    /* Linha de Cartões (Scroll horizontal no celular) */
     .cards-row {
       display: flex;
       gap: 20px;
       overflow-x: auto;
       padding-bottom: 15px;
-      /* Estilização da barra de rolagem */
       scrollbar-width: thin;
       scrollbar-color: var(--border-color) transparent;
     }
     
     .cards-row::-webkit-scrollbar { height: 8px; }
-    .cards-row::-webkit-scrollbar-track { background: transparent; }
     .cards-row::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
 
     .champion-card {
@@ -96,8 +91,8 @@
       border: 1px solid var(--border-color);
       border-radius: 12px;
       padding: 20px;
-      min-width: 260px;
-      max-width: 260px;
+      min-width: 250px;
+      max-width: 250px;
       text-align: center;
       position: relative;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
@@ -108,7 +103,7 @@
       display: inline-block;
       background-color: var(--accent-gold);
       color: #000;
-      font-weight: bold;
+      font-weight: 700;
       font-size: 0.75rem;
       text-transform: uppercase;
       padding: 5px 12px;
@@ -118,15 +113,15 @@
     }
 
     .team-logo {
-      width: 90px;
-      height: 90px;
+      width: 85px;
+      height: 85px;
       object-fit: contain;
       margin: 0 auto 15px;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
     }
 
-    .champion-name { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-    .team-name { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px; }
+    .champion-name { font-size: 1.2rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .team-name { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; }
 
     .points-tag {
       font-size: 0.85rem;
@@ -138,8 +133,8 @@
     }
 
     .loading, .error-msg { text-align: center; color: var(--text-muted); font-size: 1.1rem; margin-top: 40px; }
-    
-    footer { margin-top: 50px; color: var(--text-muted); font-size: 0.85rem; text-align: center;}
+
+    footer { margin-top: 50px; color: var(--text-muted); font-size: 0.85rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -155,58 +150,72 @@
   </main>
 
   <footer>
-    <p>Liga Cartola FC • Desenvolvido para os leões do grupo</p>
+    <p>Liga Cartola FC • Desde 2015</p>
   </footer>
 
   <script>
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTcXk8W9C9dh0DW_a-Cqxr--9D2RlsglbiYKqlMobr2zoZAmZ_4CXSeqFcMTjvsWwf7cSNh-e5oamMP/pub?gid=0&single=true&output=csv';
 
-    // Ordem de importância das competições (esquerda para direita)
-    const orderDeImportancia = {
-      "campeonato": 1,
-      "quadro de medalhas": 2,
-      "1o turno": 3,
-      "1º turno": 3, // caso digite com o símbolo
-      "2o turno": 4,
-      "2º turno": 4,
-      "super copa": 5
-    };
+    // Ordem de importância pedida
+    function getWeight(competicao) {
+      const comp = competicao.toLowerCase().trim();
+      if (comp.includes('campeonato')) return 1;
+      if (comp.includes('medalha')) return 2;
+      if (comp.includes('1') || comp.includes('primeiro')) return 3;
+      if (comp.includes('2') || comp.includes('segundo')) return 4;
+      if (comp.includes('super')) return 5;
+      return 99; // Se for outra competição, fica no final
+    }
+
+    // Função para extrair dados da linha independente do nome da coluna
+    function getFieldValue(item, candidates) {
+      const keys = Object.keys(item);
+      for (let candidate of candidates) {
+        const foundKey = keys.find(k => k.trim().toLowerCase() === candidate.toLowerCase());
+        if (foundKey && item[foundKey] !== undefined && item[foundKey] !== null) {
+          return item[foundKey].toString().trim();
+        }
+      }
+      return '';
+    }
 
     function processarDados(data) {
       const groupedData = {};
 
       data.forEach(item => {
-        const ano = item.Ano || item.ano;
-        const competicao = item.Competicao || item.Competição || item.competicao || '';
-        const cartoleiro = item.Cartoleiro || item.cartoleiro || '';
-        const time = item.Time || item.time || item['Nome do Time'] || '';
-        const pontos = item.Pontos || item.pontos || item.Pontuação || '';
-        const logo = item.Logo_URL || item.logo || item.Escudo || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
-        const participantes = item.Participantes || item.participantes || '';
+        const ano = getFieldValue(item, ['Ano', 'ANO']);
+        const competicao = getFieldValue(item, ['Competicao', 'Competição', 'Torneio', 'Titulo', 'Título']);
+        const cartoleiro = getFieldValue(item, ['Cartoleiro', 'Nome', 'Campeao', 'Campeão']);
+        const time = getFieldValue(item, ['Time', 'Nome do Time', 'Equipe']);
+        const pontos = getFieldValue(item, ['Pontos', 'Pontos Totais', 'Pontuação', 'Pontuacao']);
+        const logo = getFieldValue(item, ['Logo_URL', 'Logo', 'Escudo', 'Foto', 'URL_Logo']) || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
+        const participantes = getFieldValue(item, ['Participantes', 'Qtd Times', 'Times', 'Participantes_Qtd']);
 
-        // Ignora linhas vazias (ex: 2026 que ainda não tem campeão definido)
+        // Descarta se não houver ano ou cartoleiro preenchido (ex: anos futuros vazios)
         if (!ano || !cartoleiro) return;
 
-        // Cria o ano no objeto se não existir
         if (!groupedData[ano]) {
           groupedData[ano] = {
             ano: ano,
             participantes: participantes,
             campeoes: []
           };
+        } else if (participantes && !groupedData[ano].participantes) {
+          groupedData[ano].participantes = participantes;
         }
 
-        // Determina o peso para ordenação
-        const compNormalized = competicao.trim().toLowerCase();
-        const sortWeight = orderDeImportancia[compNormalized] || 99; // Se não achar, joga pro final
-
         groupedData[ano].campeoes.push({
-          competicao, cartoleiro, time, pontos, logo, sortWeight
+          competicao: competicao || 'Campeonato',
+          cartoleiro,
+          time,
+          pontos,
+          logo,
+          sortWeight: getWeight(competicao)
         });
       });
 
-      // Ordenar os anos de forma descendente (2025 para 2015)
-      const sortedYears = Object.values(groupedData).sort((a, b) => b.ano - a.ano);
+      // Ordena anos do maior (2025) para o menor (2015)
+      const sortedYears = Object.values(groupedData).sort((a, b) => parseInt(b.ano) - parseInt(a.ano));
 
       renderizarGaleria(sortedYears);
     }
@@ -216,22 +225,19 @@
       container.innerHTML = '';
 
       if (anosData.length === 0) {
-        container.innerHTML = '<div class="error-msg">Nenhum campeão encontrado. Verifique a planilha.</div>';
+        container.innerHTML = '<div class="error-msg">Nenhum dado encontrado. Verifique a planilha.</div>';
         return;
       }
 
       anosData.forEach(anoGroup => {
-        // Ordena os campeões daquele ano pela ordem de importância
+        // Ordena os cartões da esquerda para a direita pela regra de importância
         anoGroup.campeoes.sort((a, b) => a.sortWeight - b.sortWeight);
 
-        // Cria a seção do ano
         const section = document.createElement('div');
         section.className = 'year-section';
 
-        // Título do ano e participantes
-        const participantesText = anoGroup.participantes ? `<span class="year-participants">(${anoGroup.participantes})</span>` : '';
+        const partText = anoGroup.participantes ? `<span class="year-participants">(${anoGroup.participantes})</span>` : '';
         
-        // Html dos cards
         let cardsHtml = '';
         anoGroup.campeoes.forEach(camp => {
           cardsHtml += `
@@ -248,7 +254,7 @@
         section.innerHTML = `
           <div class="year-header">
             <div class="year-title">${anoGroup.ano}</div>
-            ${participantesText}
+            ${partText}
           </div>
           <div class="cards-row">
             ${cardsHtml}
@@ -268,7 +274,7 @@
       },
       error: function(err) {
         document.getElementById('galleryContainer').innerHTML = 
-          '<div class="error-msg">Erro ao carregar dados. Verifique a conexão com o Google Sheets.</div>';
+          '<div class="error-msg">Erro ao conectar com a planilha.</div>';
       }
     });
   </script>
