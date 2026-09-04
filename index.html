@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Galeria de Campeões - Cartola FC</title>
-  <!-- PapaParse para ler a planilha em CSV -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     :root {
@@ -14,6 +13,7 @@
       --text-main: #f0f6fc;
       --text-muted: #8b949e;
       --border-color: #30363d;
+      --competition-tag: #238636;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
@@ -25,113 +25,110 @@
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 20px 15px;
+      padding: 30px 15px;
     }
 
     header {
       text-align: center;
-      margin-bottom: 25px;
+      margin-bottom: 35px;
       width: 100%;
-      max-width: 600px;
+      max-width: 800px;
     }
 
-    .trophy-icon { font-size: 3.2rem; margin-bottom: 5px; }
-
-    h1 {
-      font-size: 1.8rem;
-      color: var(--accent-gold);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    p.subtitle {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      margin-top: 4px;
-    }
-
-    .search-container {
-      width: 100%;
-      max-width: 500px;
-      margin-bottom: 25px;
-    }
-
-    .search-container input {
-      width: 100%;
-      padding: 12px 18px;
-      border-radius: 25px;
-      border: 1px solid var(--border-color);
-      background-color: var(--card-bg);
-      color: var(--text-main);
-      font-size: 0.95rem;
-      outline: none;
-      transition: border-color 0.3s;
-    }
-
-    .search-container input:focus {
-      border-color: var(--accent-gold);
-    }
+    .trophy-icon { font-size: 3.5rem; margin-bottom: 10px; }
+    h1 { font-size: 2rem; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 2px; }
+    p.subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 8px; }
 
     .gallery-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 20px;
       width: 100%;
-      max-width: 900px;
+      max-width: 1200px;
+      display: flex;
+      flex-direction: column;
+      gap: 40px;
     }
+
+    /* Seção de cada Ano */
+    .year-section {
+      background: rgba(22, 27, 34, 0.4);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .year-header {
+      display: flex;
+      align-items: baseline;
+      gap: 15px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+
+    .year-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent-gold);
+    }
+
+    .year-participants {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-style: italic;
+    }
+
+    /* Linha de Cartões (Scroll horizontal no celular) */
+    .cards-row {
+      display: flex;
+      gap: 20px;
+      overflow-x: auto;
+      padding-bottom: 15px;
+      /* Estilização da barra de rolagem */
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-color) transparent;
+    }
+    
+    .cards-row::-webkit-scrollbar { height: 8px; }
+    .cards-row::-webkit-scrollbar-track { background: transparent; }
+    .cards-row::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 10px; }
 
     .champion-card {
       background: linear-gradient(145deg, #1c2128, #161b22);
       border: 1px solid var(--border-color);
-      border-radius: 16px;
+      border-radius: 12px;
       padding: 20px;
+      min-width: 260px;
+      max-width: 260px;
       text-align: center;
       position: relative;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      flex-shrink: 0;
     }
 
-    .champion-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 6px 25px rgba(255, 215, 0, 0.15);
-      border-color: rgba(255, 215, 0, 0.4);
-    }
-
-    .year-badge {
-      position: absolute;
-      top: 15px;
-      right: 15px;
+    .competition-badge {
+      display: inline-block;
       background-color: var(--accent-gold);
       color: #000;
       font-weight: bold;
-      font-size: 0.85rem;
-      padding: 4px 10px;
-      border-radius: 12px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      letter-spacing: 0.5px;
     }
 
     .team-logo {
-      width: 100px;
-      height: 100px;
+      width: 90px;
+      height: 90px;
       object-fit: contain;
-      margin: 15px auto;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+      margin: 0 auto 15px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
     }
 
-    .champion-name {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 4px;
-    }
-
-    .team-name {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-    }
+    .champion-name { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .team-name { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 15px; }
 
     .points-tag {
-      display: inline-block;
       font-size: 0.85rem;
       background-color: rgba(255, 215, 0, 0.1);
       color: var(--accent-gold);
@@ -140,19 +137,9 @@
       border: 1px solid rgba(255, 215, 0, 0.2);
     }
 
-    .loading, .error-msg {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 1.1rem;
-      margin-top: 40px;
-      grid-column: 1 / -1;
-    }
-
-    footer {
-      margin-top: 40px;
-      color: var(--text-muted);
-      font-size: 0.8rem;
-    }
+    .loading, .error-msg { text-align: center; color: var(--text-muted); font-size: 1.1rem; margin-top: 40px; }
+    
+    footer { margin-top: 50px; color: var(--text-muted); font-size: 0.85rem; text-align: center;}
   </style>
 </head>
 <body>
@@ -160,80 +147,128 @@
   <header>
     <div class="trophy-icon">🏆</div>
     <h1>Galeria de Campeões</h1>
-    <p class="subtitle">Histórico de Campeões do Cartola FC desde 2015</p>
+    <p class="subtitle">Histórico de Títulos do Cartola FC desde 2015</p>
   </header>
 
-  <div class="search-container">
-    <input type="text" id="searchInput" placeholder="Buscar por ano, cartoleiro ou time..." onkeyup="filterCards()">
-  </div>
-
   <main class="gallery-container" id="galleryContainer">
-    <div class="loading">Carregando galeria...</div>
+    <div class="loading">Carregando histórico de campeões...</div>
   </main>
 
   <footer>
-    <p>Liga Cartola FC • Desde 2015</p>
+    <p>Liga Cartola FC • Desenvolvido para os leões do grupo</p>
   </footer>
 
   <script>
-    // URL CSV derivada do seu link de publicação na web do Google Sheets
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTcXk8W9C9dh0DW_a-Cqxr--9D2RlsglbiYKqlMobr2zoZAmZ_4CXSeqFcMTjvsWwf7cSNh-e5oamMP/pub?gid=0&single=true&output=csv';
 
-    let allChampionsData = [];
+    // Ordem de importância das competições (esquerda para direita)
+    const orderDeImportancia = {
+      "campeonato": 1,
+      "quadro de medalhas": 2,
+      "1o turno": 3,
+      "1º turno": 3, // caso digite com o símbolo
+      "2o turno": 4,
+      "2º turno": 4,
+      "super copa": 5
+    };
 
-    function renderCards(data) {
+    function processarDados(data) {
+      const groupedData = {};
+
+      data.forEach(item => {
+        const ano = item.Ano || item.ano;
+        const competicao = item.Competicao || item.Competição || item.competicao || '';
+        const cartoleiro = item.Cartoleiro || item.cartoleiro || '';
+        const time = item.Time || item.time || item['Nome do Time'] || '';
+        const pontos = item.Pontos || item.pontos || item.Pontuação || '';
+        const logo = item.Logo_URL || item.logo || item.Escudo || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
+        const participantes = item.Participantes || item.participantes || '';
+
+        // Ignora linhas vazias (ex: 2026 que ainda não tem campeão definido)
+        if (!ano || !cartoleiro) return;
+
+        // Cria o ano no objeto se não existir
+        if (!groupedData[ano]) {
+          groupedData[ano] = {
+            ano: ano,
+            participantes: participantes,
+            campeoes: []
+          };
+        }
+
+        // Determina o peso para ordenação
+        const compNormalized = competicao.trim().toLowerCase();
+        const sortWeight = orderDeImportancia[compNormalized] || 99; // Se não achar, joga pro final
+
+        groupedData[ano].campeoes.push({
+          competicao, cartoleiro, time, pontos, logo, sortWeight
+        });
+      });
+
+      // Ordenar os anos de forma descendente (2025 para 2015)
+      const sortedYears = Object.values(groupedData).sort((a, b) => b.ano - a.ano);
+
+      renderizarGaleria(sortedYears);
+    }
+
+    function renderizarGaleria(anosData) {
       const container = document.getElementById('galleryContainer');
       container.innerHTML = '';
 
-      if (data.length === 0) {
-        container.innerHTML = '<div class="error-msg">Nenhum campeão encontrado.</div>';
+      if (anosData.length === 0) {
+        container.innerHTML = '<div class="error-msg">Nenhum campeão encontrado. Verifique a planilha.</div>';
         return;
       }
 
-      data.forEach(item => {
-        // Mapeamento dinâmico baseado no cabeçalho da planilha
-        const ano = item.Ano || item.ano || item[Object.keys(item)[0]] || '';
-        const cartoleiro = item.Cartoleiro || item.cartoleiro || item.Nome || item[Object.keys(item)[1]] || '';
-        const time = item.Time || item.time || item['Nome do Time'] || item[Object.keys(item)[2]] || '';
-        const pontos = item.Pontos || item.pontos || item.Pontuação || item[Object.keys(item)[3]] || '';
-        const logo = item.Logo_URL || item.logo || item.Logo || item.Escudo || item[Object.keys(item)[4]] || 'https://via.placeholder.com/100/ffd700/000000?text=ESCUDO';
+      anosData.forEach(anoGroup => {
+        // Ordena os campeões daquele ano pela ordem de importância
+        anoGroup.campeoes.sort((a, b) => a.sortWeight - b.sortWeight);
 
-        if (!ano && !cartoleiro) return;
+        // Cria a seção do ano
+        const section = document.createElement('div');
+        section.className = 'year-section';
 
-        const card = document.createElement('div');
-        card.className = 'champion-card';
-        card.innerHTML = `
-          <span class="year-badge">${ano}</span>
-          <img src="${logo}" alt="Escudo de ${time}" class="team-logo" onerror="this.src='https://via.placeholder.com/100/ffd700/000000?text=ESCUDO'">
-          <div class="champion-name">${cartoleiro}</div>
-          <div class="team-name">${time}</div>
-          ${pontos ? `<div class="points-tag">${pontos} pts</div>` : ''}
+        // Título do ano e participantes
+        const participantesText = anoGroup.participantes ? `<span class="year-participants">(${anoGroup.participantes})</span>` : '';
+        
+        // Html dos cards
+        let cardsHtml = '';
+        anoGroup.campeoes.forEach(camp => {
+          cardsHtml += `
+            <div class="champion-card">
+              <div class="competition-badge">${camp.competicao}</div>
+              <img src="${camp.logo}" alt="Escudo" class="team-logo" onerror="this.src='https://via.placeholder.com/100/ffd700/000000?text=ESCUDO'">
+              <div class="champion-name">${camp.cartoleiro}</div>
+              <div class="team-name">${camp.time}</div>
+              ${camp.pontos ? `<div class="points-tag">${camp.pontos}</div>` : ''}
+            </div>
+          `;
+        });
+
+        section.innerHTML = `
+          <div class="year-header">
+            <div class="year-title">${anoGroup.ano}</div>
+            ${participantesText}
+          </div>
+          <div class="cards-row">
+            ${cardsHtml}
+          </div>
         `;
-        container.appendChild(card);
+
+        container.appendChild(section);
       });
     }
 
-    function filterCards() {
-      const term = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = allChampionsData.filter(item => {
-        const str = Object.values(item).join(' ').toLowerCase();
-        return str.includes(term);
-      });
-      renderCards(filtered);
-    }
-
-    // Busca e converte o CSV da Planilha do Google
     Papa.parse(csvUrl, {
       download: true,
       header: true,
       skipEmptyLines: true,
       complete: function(results) {
-        allChampionsData = results.data;
-        renderCards(allChampionsData);
+        processarDados(results.data);
       },
       error: function(err) {
         document.getElementById('galleryContainer').innerHTML = 
-          '<div class="error-msg">Erro ao carregar dados da planilha. Verifique o link público.</div>';
+          '<div class="error-msg">Erro ao carregar dados. Verifique a conexão com o Google Sheets.</div>';
       }
     });
   </script>
